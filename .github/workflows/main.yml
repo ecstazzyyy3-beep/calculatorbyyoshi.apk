@@ -1,0 +1,49 @@
+name: Build APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y python3 python3-pip openjdk-17-jdk git zip
+          pip install buildozer cython
+          pip install kivy
+
+      - name: Create buildozer.spec
+        run: |
+          echo "[app]
+title = Калькулятор
+package.name = calculator
+package.domain = org.example
+source.dir = .
+source.include_exts = py,png,jpg,kv,atlas
+version = 1.0
+requirements = python3,kivy
+orientation = portrait
+fullscreen = 1
+icon.filename = icon.png
+android.permissions = INTERNET
+
+[buildozer]
+log_level = 2
+warn_on_root = 1" > buildozer.spec
+
+      - name: Build APK
+        run: |
+          buildozer android debug
+          mkdir dist_out
+          cp bin/*.apk dist_out/ || echo "No APK found"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: calculator-apk
+          path: dist_out/
